@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lab — Prompt Engineering Lab</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <header class="lab-header">
+    <div class="container">
+      <a href="/" class="logo">🧪 <span>Prompt Engineering Lab</span></a>
+      <div class="header-meta">
+        <span class="backend-badge connected" id="backend-badge">🟢 Connected</span>
+      </div>
+    </div>
+  </header>
+
+  <main class="container lab-page">
+    <!-- Experiment header -->
+    <div class="exp-header" id="exp-header">
+      <a href="/" class="back-link">← All Experiments</a>
+      <div class="exp-num-lg" id="exp-num">--</div>
+      <h1 id="exp-title">Loading...</h1>
+      <p class="exp-technique" id="exp-technique"></p>
+      <p class="exp-description" id="exp-description"></p>
+    </div>
+
+    <!-- Variants -->
+    <div id="variants-container"></div>
+  </main>
+
+  <footer class="lab-footer">
+    <div class="container">
+      <p>Prompt Engineering Lab — <a href="https://github.com/winaykumar/prompt-engineering-lab" target="_blank">GitHub</a></p>
+    </div>
+  </footer>
+
+  <script>
+    const EXP_ID = window.location.pathname.split('/lab/')[1]?.replace(/\/$/, '');
+
+    // ═══ LOAD EXPERIMENT ═══
+    async function loadExperiment() {
+      try {
+        const res = await fetch(`/api/experiments/${EXP_ID}`);
+        if (!res.ok) throw new Error('Not found');
+        const exp = await res.json();
+
+        document.title = `${exp.title} — PE Lab`;
+        document.getElementById('exp-num').textContent = exp.id;
+        document.getElementById('exp-title').textContent = exp.title;
+        document.getElementById('exp-technique').textContent = exp.technique;
+        document.getElementById('exp-description').textContent = exp.description;
+
+        renderVariants(exp.variants);
+      } catch (e) {
+        document.getElementById('exp-title').textContent = 'Experiment not found';
+      }
+    }
+
+    // ═══ RENDER VARIANTS ═══
+    function renderVariants(variants) {
+      const container = document.getElementById('variants-container');
+      container.innerHTML = variants.map((v, i) => `
+        <div class="variant-card" id="variant-${i}">
+          <div class="variant-header">
+            <div class="variant-name">${v.name}</div>
+            <div class="variant-label">${v.label || ''}</div>
+          </div>
+
+          <div class="messages-editor" id="msgs-${i}">
+            ${v.messages.map((m, mi) => `
+              <div class="msg-row">
+                <div class="msg-role-selector">
+                  <select data-variant="${i}" data-msg="${mi}" class="role-select">
+                    <option value="system" ${m.role === 'system' ? 'selected' : ''}>⚙️ System</option>
+                    <option value="user" ${m.role === 'user' ? 'selected' : ''}>👤 User</option>
+                    <option value="assistant" ${m.role === 'assistant' ? 'selected' : ''}>🤖 Assistant</option>
+                  </select>
+                </div>
+                <textarea class="msg-content" data-variant="${i}" data-msg="${mi}" rows="${Math.max(3, m.content.split('\n').length)}">${escapeHtml(m.content)}</textarea>
+                <button class="btn-icon btn-remove-msg" onclick="removeMessage(${i}, ${mi})" title="Remove message">✕</button>
+              </div>
+            `).join('')}
+          </div>
+
+          <div class="variant-controls">
+            <button class="btn-small btn-add-msg" onclick="addMessage(${i})">+ Add Message</button>
+            <div class="param-group">
+              <label>Temp:</label>
+              <input type="number" class="param-input" id="temp-${i}" value="${v.temperature}" min="0" max="2" step="0.1">
+            </div>
+            <div class="param-group">
+              <label>Max tokens:</label>
+              <input type="number" class="param-input" id="maxtok-${i}" value="1000" min="50" max="4096" step="50">
+            </div>
+            <button class="btn-run" onclick="runVariant(${i})" id="run-btn-${i}">▶ Run</button>
+          </div>
+
+          <div class="result-area" id="result-${i}" style="display:none">
+            <div class="result-header">
+              <span class="result-label">Response</span>
+              <span class="result-meta" id="meta-${i}"></span>
+            </div>
+            <pre class="result-text" id="text-${i}"></pre>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // ═══ RUN A VARIANT ═══
+    async function runVariant(idx) {
+      const btn = document.getElementById(`run-btn-${idx}`);
+      const resultArea = document.getElementById(`result-${idx}`);
+      const textEl = document.getElementById(`text-${idx}`);
+      const metaEl = document.getElementById(`meta-${idx}`);
+
+      // Collect edited messages
+      const messages = collectMessages(idx);
+      const temperature = parseFloat(document.getElementById(`temp-${idx}`).value);
+      const max_tokens = parseInt(document.getElementById(`maxtok-${idx}`).value);
+
+      btn.disabled = true;
+      btn.textContent = '⏳ Running...';
+      resultArea.style.display = 'block';
+      textEl.textContent = 'Waiting for response...';
+      metaEl.textContent = '';
+
+      try {
+        const res = await fetch('/api/run', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ messages, temperature, max_tokens }),
+        });
+
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err.detail || 'Request failed');
+        }
+
+        const data = await res.json();
+        textEl.textContent = data.text;
+        metaEl.textContent = `⏱ ${data.latency_ms}ms · 📊 ${data.tokens} tokens · 🏷 ${data.model} · ${data.backend}`;
+        resultArea.classList.remove('error');
+      } catch (e) {
+        textEl.textContent = `Error: ${e.message}`;
+        resultArea.classList.add('error');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = '▶ Run';
+      }
+    }
+
+    // ═══ MESSAGE EDITING ═══
+    function collectMessages(variantIdx) {
+      const rows = document.querySelectorAll(`#msgs-${variantIdx} .msg-row`);
+      return Array.from(rows).map(row => ({
+        role: row.querySelector('.role-select').value,
+        content: row.querySelector('.msg-content').value,
+      }));
+    }
+
+    function addMessage(variantIdx) {
+      const editor = document.getElementById(`msgs-${variantIdx}`);
+      const msgIdx = editor.querySelectorAll('.msg-row').length;
+      const row = document.createElement('div');
+      row.className = 'msg-row';
+      row.innerHTML = `
+        <div class="msg-role-selector">
+          <select class="role-select" data-variant="${variantIdx}" data-msg="${msgIdx}">
+            <option value="system">⚙️ System</option>
+            <option value="user" selected>👤 User</option>
+            <option value="assistant">🤖 Assistant</option>
+          </select>
+        </div>
+        <textarea class="msg-content" data-variant="${variantIdx}" data-msg="${msgIdx}" rows="3" placeholder="Type your message..."></textarea>
+        <button class="btn-icon btn-remove-msg" onclick="this.parentElement.remove()" title="Remove message">✕</button>
+      `;
+      editor.appendChild(row);
+    }
+
+    function removeMessage(variantIdx, msgIdx) {
+      const rows = document.querySelectorAll(`#msgs-${variantIdx} .msg-row`);
+      if (rows.length > 1) rows[msgIdx]?.remove();
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    // ═══ INIT ═══
+    loadExperiment();
+  </script>
+</body>
+</html>
+

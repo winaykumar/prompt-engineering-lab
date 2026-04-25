@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Prompt Engineering Lab</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <header class="lab-header">
+    <div class="container">
+      <div class="logo">🧪 <span>Prompt Engineering Lab</span></div>
+      <div class="header-meta">
+        <span class="backend-badge" id="backend-badge">⏳ checking...</span>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="hero">
+      <h1>Prompt Engineering Lab</h1>
+      <p class="subtitle">Interactive experiments with real LLM calls. Edit prompts, tweak parameters, see results instantly.</p>
+      <div class="hero-stats">
+        <div class="stat"><span class="stat-num">7</span><span class="stat-label">Experiments</span></div>
+        <div class="stat"><span class="stat-num">Local</span><span class="stat-label">Ollama / EC2</span></div>
+        <div class="stat"><span class="stat-num">$0</span><span class="stat-label">API Cost</span></div>
+      </div>
+    </section>
+
+    <section class="experiments-grid" id="experiments-grid">
+      <!-- Filled by JS -->
+    </section>
+  </main>
+
+  <footer class="lab-footer">
+    <div class="container">
+      <p>Prompt Engineering Lab — <a href="https://github.com/winaykumar/prompt-engineering-lab" target="_blank">GitHub</a> · Run locally with Ollama</p>
+    </div>
+  </footer>
+
+  <script>
+    async function loadExperiments() {
+      try {
+        const res = await fetch('/api/experiments');
+        const experiments = await res.json();
+        const grid = document.getElementById('experiments-grid');
+
+        const icons = ['🎯','🌡️','🧠','📋','🎭','🔄','🛡️'];
+        grid.innerHTML = experiments.map((exp, i) => `
+          <a href="/lab/${exp.id}" class="exp-card">
+            <div class="exp-icon">${icons[i] || '🧪'}</div>
+            <div class="exp-num">${exp.id}</div>
+            <div class="exp-title">${exp.title}</div>
+            <div class="exp-desc">${exp.description}</div>
+          </a>
+        `).join('');
+      } catch (e) {
+        document.getElementById('experiments-grid').innerHTML =
+          '<p class="error">Failed to load experiments. Is the backend running?</p>';
+      }
+    }
+
+    async function checkBackend() {
+      const badge = document.getElementById('backend-badge');
+      try {
+        const res = await fetch('/api/experiments');
+        if (res.ok) {
+          badge.textContent = '🟢 Backend connected';
+          badge.classList.add('connected');
+        }
+      } catch {
+        badge.textContent = '🔴 Backend offline';
+        badge.classList.add('offline');
+      }
+    }
+
+    loadExperiments();
+    checkBackend();
+  </script>
+</body>
+</html>
+
