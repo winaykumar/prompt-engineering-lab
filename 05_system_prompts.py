@@ -21,4 +21,3 @@ for name, system in PERSONAS:
         {"role": "user", "content": USER_Q},
     ])
     print(result)
-

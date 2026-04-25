@@ -36,4 +36,3 @@ strong = chat([
     {"role": "user", "content": ATTACK},
 ])
 print(strong)
-

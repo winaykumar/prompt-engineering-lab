@@ -33,4 +33,3 @@ revised = chat([
     {"role": "user", "content": f"Issues found:\n{critique}\n\nRewrite the function addressing ALL issues above."},
 ])
 print(revised)
-

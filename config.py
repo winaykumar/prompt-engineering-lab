@@ -37,4 +37,3 @@ def chat(messages: list, temperature: float = 0.0, max_tokens: int = 500) -> str
         max_tokens=max_tokens,
     )
     return response.choices[0].message.content.strip()
-

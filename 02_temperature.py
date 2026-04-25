@@ -16,4 +16,3 @@ for temp in [0.0, 0.7, 1.5]:
             temperature=temp,
         )
         print(f"  Run {run+1}: {result}")
-

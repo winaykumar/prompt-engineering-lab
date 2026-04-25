@@ -49,4 +49,3 @@ Edit `config.py` to switch between:
 ## License
 
 MIT — use freely for learning and experimentation.
-

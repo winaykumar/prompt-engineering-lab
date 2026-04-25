@@ -32,4 +32,3 @@ Review: "The battery life is incredible but the screen is too dim outdoors."
 Sentiment:"""}
 ])
 print(f"Few-shot: {few_shot}")
-

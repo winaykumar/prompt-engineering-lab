@@ -16,14 +16,14 @@ class ProductReview(BaseModel):
     score: float         # 1.0 to 5.0
 
 
-REVIEW = """The Sony WH-1000XM5 headphones have amazing noise cancellation
-and very comfortable ear cups. Battery lasts about 30 hours which is great.
-However, they don't fold flat anymore which makes travel harder, and the
+REVIEW = """The Sony WH-1000XM5 headphones have amazing noise cancellation 
+and very comfortable ear cups. Battery lasts about 30 hours which is great. 
+However, they don't fold flat anymore which makes travel harder, and the 
 price of $400 feels steep compared to alternatives."""
 
 result = chat([
-    {"role": "system", "content": """You are a product review analyser.
-Extract structured data from reviews.
+    {"role": "system", "content": """You are a product review analyser. 
+Extract structured data from reviews. 
 Respond with ONLY valid JSON matching this schema:
 {
   "product_name": "string",
@@ -49,4 +49,3 @@ try:
     print(f"   Cons: {review.key_cons}")
 except (json.JSONDecodeError, ValidationError) as e:
     print(f"❌ Parse error: {e}")
-

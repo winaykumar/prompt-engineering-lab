@@ -4,7 +4,7 @@ Compares direct answer vs step-by-step reasoning on a math problem.
 """
 from config import chat
 
-PROBLEM = """A store sells apples for $2 each. If you buy 5 or more, you get a 20% discount.
+PROBLEM = """A store sells apples for $2 each. If you buy 5 or more, you get a 20% discount. 
 Tax is 8%. How much do you pay for 7 apples?"""
 
 # ═══ WITHOUT CoT ═══
@@ -24,4 +24,3 @@ Think step by step:
 4. State the final amount"""}
 ])
 print(f"\nChain-of-Thought:\n{cot}")
-
