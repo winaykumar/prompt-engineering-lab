@@ -17,17 +17,28 @@
   </header>
 
   <main class="container lab-page">
-    <!-- Experiment header -->
-    <div class="exp-header" id="exp-header">
-      <a href="/" class="back-link">← All Experiments</a>
-      <div class="exp-num-lg" id="exp-num">--</div>
-      <h1 id="exp-title">Loading...</h1>
-      <p class="exp-technique" id="exp-technique"></p>
-      <p class="exp-description" id="exp-description"></p>
-    </div>
+    <div class="lab-layout">
+      <aside class="lab-sidebar" id="lab-sidebar">
+        <div class="sidebar-title">Experiments</div>
+        <div class="sidebar-links" id="experiment-nav">
+          <div class="sidebar-loading">Loading...</div>
+        </div>
+      </aside>
 
-    <!-- Variants -->
-    <div id="variants-container"></div>
+      <section class="lab-content">
+        <!-- Experiment header -->
+        <div class="exp-header" id="exp-header">
+          <a href="/" class="back-link">← All Experiments</a>
+          <div class="exp-num-lg" id="exp-num">--</div>
+          <h1 id="exp-title">Loading...</h1>
+          <p class="exp-technique" id="exp-technique"></p>
+          <p class="exp-description" id="exp-description"></p>
+        </div>
+
+        <!-- Variants -->
+        <div id="variants-container"></div>
+      </section>
+    </div>
   </main>
 
   <footer class="lab-footer">
@@ -38,6 +49,31 @@
 
   <script>
     const EXP_ID = window.location.pathname.split('/lab/')[1]?.replace(/\/$/, '');
+
+    // ═══ ORIGINAL VARIANT DATA (for reset) ═══
+    let originalVariants = [];
+
+    // ═══ LOAD SIDEBAR NAV ═══
+    async function loadExperimentNav() {
+      const nav = document.getElementById('experiment-nav');
+      try {
+        const res = await fetch('/api/experiments');
+        if (!res.ok) throw new Error('Failed to load experiments');
+        const experiments = await res.json();
+
+        nav.innerHTML = experiments.map(exp => {
+          const activeClass = exp.id === EXP_ID ? 'active' : '';
+          return `
+            <a class="sidebar-link ${activeClass}" href="/lab/${exp.id}" title="${escapeHtml(exp.title)}">
+              <span class="sidebar-id">${exp.id}</span>
+              <span class="sidebar-text">${escapeHtml(exp.title)}</span>
+            </a>
+          `;
+        }).join('');
+      } catch (e) {
+        nav.innerHTML = '<a class="sidebar-link" href="/">View all experiments</a>';
+      }
+    }
 
     // ═══ LOAD EXPERIMENT ═══
     async function loadExperiment() {
@@ -52,6 +88,8 @@
         document.getElementById('exp-technique').textContent = exp.technique;
         document.getElementById('exp-description').textContent = exp.description;
 
+        // Deep-copy originals so reset always has a clean baseline
+        originalVariants = JSON.parse(JSON.stringify(exp.variants));
         renderVariants(exp.variants);
       } catch (e) {
         document.getElementById('exp-title').textContent = 'Experiment not found';
@@ -95,6 +133,7 @@
               <input type="number" class="param-input" id="maxtok-${i}" value="1000" min="50" max="4096" step="50">
             </div>
             <button class="btn-run" onclick="runVariant(${i})" id="run-btn-${i}">▶ Run</button>
+            <button class="btn-reset" onclick="resetVariant(${i})" title="Reset to defaults">↺ Reset</button>
           </div>
 
           <div class="result-area" id="result-${i}" style="display:none">
@@ -184,6 +223,39 @@
       if (rows.length > 1) rows[msgIdx]?.remove();
     }
 
+    // ═══ RESET A VARIANT ═══
+    function resetVariant(variantIdx) {
+      const original = originalVariants[variantIdx];
+      if (!original) return;
+
+      // Rebuild the messages editor from original data
+      const editor = document.getElementById(`msgs-${variantIdx}`);
+      editor.innerHTML = original.messages.map((m, mi) => `
+        <div class="msg-row">
+          <div class="msg-role-selector">
+            <select data-variant="${variantIdx}" data-msg="${mi}" class="role-select">
+              <option value="system" ${m.role === 'system' ? 'selected' : ''}>⚙️ System</option>
+              <option value="user" ${m.role === 'user' ? 'selected' : ''}>👤 User</option>
+              <option value="assistant" ${m.role === 'assistant' ? 'selected' : ''}>🤖 Assistant</option>
+            </select>
+          </div>
+          <textarea class="msg-content" data-variant="${variantIdx}" data-msg="${mi}" rows="${Math.max(3, m.content.split('\n').length)}">${escapeHtml(m.content)}</textarea>
+          <button class="btn-icon btn-remove-msg" onclick="removeMessage(${variantIdx}, ${mi})" title="Remove message">✕</button>
+        </div>
+      `).join('');
+
+      // Restore temperature
+      document.getElementById(`temp-${variantIdx}`).value = original.temperature;
+      // Restore max tokens to default
+      document.getElementById(`maxtok-${variantIdx}`).value = 1000;
+      // Clear result area
+      const resultArea = document.getElementById(`result-${variantIdx}`);
+      resultArea.style.display = 'none';
+      resultArea.classList.remove('error');
+      document.getElementById(`text-${variantIdx}`).textContent = '';
+      document.getElementById(`meta-${variantIdx}`).textContent = '';
+    }
+
     function escapeHtml(text) {
       const div = document.createElement('div');
       div.textContent = text;
@@ -191,6 +263,7 @@
     }
 
     // ═══ INIT ═══
+    loadExperimentNav();
     loadExperiment();
   </script>
 </body>
