@@ -1,39 +1,36 @@
 """
-Prompt Engineering Lab — Shared Configuration
-Edit the settings below to switch between Ollama, OpenAI, or EC2.
+Prompt Engineering Lab — Shared Configuration for CLI Scripts
+Delegates to the same provider system used by the web app.
+Configure via .env or environment variables.
 """
-from openai import OpenAI
+import os
 
-# ═══ CONFIGURATION ═══
+# Load .env if python-dotenv is available (same as web app)
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
 
-# Option A: Ollama (local, free) — DEFAULT
-BASE_URL = "http://localhost:11434/v1"
-API_KEY  = "ollama"      # Ollama doesn't need a real key
-MODEL    = "llama3.1:8b"
+from backend.llm_client import chat as _llm_chat
 
-# Option B: OpenAI (cloud, paid)
-# BASE_URL = "https://api.openai.com/v1"
-# API_KEY  = "sk-..."   # your OpenAI key
-# MODEL    = "gpt-4o-mini"
-
-# Option C: EC2 with Ollama (remote GPU)
-# BASE_URL = "http://YOUR-EC2-IP:11434/v1"
-# API_KEY  = "ollama"
-# MODEL    = "llama3.1:8b"
+# ═══ CONFIGURATION (read from .env) ═══
+MODEL = os.getenv("DEFAULT_MODEL", "llama3.1:8b")
 
 
-def get_client() -> OpenAI:
-    """Create an OpenAI-compatible client pointing to the configured endpoint."""
-    return OpenAI(base_url=BASE_URL, api_key=API_KEY)
+def get_client():
+    """Legacy compatibility — not needed with provider architecture."""
+    raise NotImplementedError(
+        "get_client() is deprecated. Use chat() instead, which delegates "
+        "to the configured provider via LLM_BACKEND in .env."
+    )
 
 
 def chat(messages: list, temperature: float = 0.0, max_tokens: int = 500) -> str:
     """Send a chat completion request and return the response text."""
-    client = get_client()
-    response = client.chat.completions.create(
-        model=MODEL,
+    result = _llm_chat(
         messages=messages,
         temperature=temperature,
         max_tokens=max_tokens,
     )
-    return response.choices[0].message.content.strip()
+    return result["text"]

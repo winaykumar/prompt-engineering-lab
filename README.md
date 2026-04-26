@@ -314,10 +314,12 @@ sudo journalctl -u ollama -f
 ### Environment Variables (`.env`)
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `LLM_BACKEND` | `ollama` | Backend: `ollama`, `ec2`, or `openai` |
+| `LLM_BACKEND` | `ollama` | Backend: `ollama`, `ec2`, `openai`, or `gemini` |
 | `OLLAMA_URL` | `http://localhost:11434/v1` | Ollama API endpoint |
 | `EC2_URL` | — | Remote EC2 endpoint (when `LLM_BACKEND=ec2`) |
 | `OPENAI_API_KEY` | — | OpenAI API key (when `LLM_BACKEND=openai`) |
+| `GEMINI_API_KEY` | — | Google Gemini API key (when `LLM_BACKEND=gemini`) |
+| `GEMINI_BASE_URL` | `https://generativelanguage.googleapis.com/v1beta` | Gemini API base URL |
 | `DEFAULT_MODEL` | `llama3.1:8b` | Model to use for completions |
 
 ---
@@ -326,7 +328,14 @@ sudo journalctl -u ollama -f
 prompt-engineering-lab/
 ├── backend/
 │   ├── main.py                 # FastAPI app — API routes + static serving
-│   ├── llm_client.py           # Unified LLM client (Ollama/EC2/OpenAI)
+│   ├── llm_client.py           # Thin dispatcher → delegates to providers
+│   ├── providers/
+│   │   ├── __init__.py         # Provider registry + get_provider()
+│   │   ├── base.py             # Abstract BaseLLMProvider class
+│   │   ├── ollama.py           # Ollama (local) — OpenAI SDK
+│   │   ├── ec2.py              # EC2 (remote Ollama) — OpenAI SDK
+│   │   ├── openai_provider.py  # OpenAI API — OpenAI SDK
+│   │   └── gemini.py           # Google Gemini — direct REST
 │   └── experiments/
 │       ├── __init__.py
 │       └── registry.py         # All 7 experiment definitions & variants
@@ -365,6 +374,58 @@ curl -X POST http://localhost:8000/api/run \
     "max_tokens": 100
   }'
 ```
+---
+## Adding a New Provider
+
+The architecture is model-agnostic — adding a new LLM backend takes **one file** and **one line** in the registry.
+
+#### Step 1 — Create a provider file
+Create `backend/providers/your_provider.py`:
+```python
+import os
+import time
+from backend.providers.base import BaseLLMProvider
+
+class YourProvider(BaseLLMProvider):
+    name = "your_provider"
+
+    def __init__(self):
+        self.api_key = os.getenv("YOUR_PROVIDER_API_KEY", "")
+        if not self.api_key:
+            raise ValueError("YOUR_PROVIDER_API_KEY is required")
+
+    def chat(self, messages, model, temperature=0.0, max_tokens=1000):
+        start = time.time()
+        # ... call your provider's API here ...
+        latency_ms = int((time.time() - start) * 1000)
+        return {
+            "text": "response text",
+            "model": model,
+            "tokens": 0,
+            "latency_ms": latency_ms,
+            "backend": self.name,
+        }
+```
+
+#### Step 2 — Register in `backend/providers/__init__.py`
+```python
+from backend.providers.your_provider import YourProvider
+
+_PROVIDERS: dict[str, type[BaseLLMProvider]] = {
+    # ...existing providers...
+    "your_provider": YourProvider,
+}
+```
+
+#### Step 3 — Configure in `.env`
+```env
+LLM_BACKEND=your_provider
+YOUR_PROVIDER_API_KEY=...
+DEFAULT_MODEL=your-model-name
+```
+
+That's it — the UI, API, and CLI scripts will automatically use the new provider.
+
 ---
 ## Companion Documentation
 Full theory and visual explanations:  
