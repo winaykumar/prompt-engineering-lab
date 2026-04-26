@@ -2,6 +2,10 @@
 Prompt Engineering Lab — FastAPI Backend
 Run: uvicorn backend.main:app --reload --port 8000
 """
+# Load .env BEFORE any other imports so providers pick up env vars
+from dotenv import load_dotenv
+load_dotenv()
+
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
