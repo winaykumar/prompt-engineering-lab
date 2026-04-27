@@ -14,7 +14,7 @@ OLLAMA_URL = os.getenv("OLLAMA_URL", "http://localhost:11434/v1")
 
 
 class OllamaProvider(BaseLLMProvider):
-    name = "ollama"
+    name = "Ollama (Local)"
 
     def __init__(self):
         self._client = OpenAI(base_url=OLLAMA_URL, api_key="ollama")

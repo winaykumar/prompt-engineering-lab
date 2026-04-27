@@ -33,6 +33,21 @@
           <h1 id="exp-title">Loading...</h1>
           <p class="exp-technique" id="exp-technique"></p>
           <p class="exp-description" id="exp-description"></p>
+          <button class="btn-code" onclick="showCode()" title="View CLI script source code">&lt;/&gt; View Code</button>
+        </div>
+
+        <!-- Code Modal -->
+        <div class="code-modal-overlay" id="code-modal" style="display:none" onclick="if(event.target===this)closeCode()">
+          <div class="code-modal">
+            <div class="code-modal-header">
+              <span class="code-modal-title" id="code-modal-title">Script</span>
+              <div class="code-modal-actions">
+                <button class="btn-copy" onclick="copyCode()" id="btn-copy-code">📋 Copy</button>
+                <button class="btn-icon" onclick="closeCode()" title="Close">✕</button>
+              </div>
+            </div>
+            <pre class="code-modal-body" id="code-modal-body"></pre>
+          </div>
         </div>
 
         <!-- Variants -->
@@ -255,6 +270,45 @@
       document.getElementById(`text-${variantIdx}`).textContent = '';
       document.getElementById(`meta-${variantIdx}`).textContent = '';
     }
+
+    // ═══ VIEW CODE MODAL ═══
+    async function showCode() {
+      const modal = document.getElementById('code-modal');
+      const body = document.getElementById('code-modal-body');
+      const title = document.getElementById('code-modal-title');
+
+      body.textContent = 'Loading...';
+      modal.style.display = 'flex';
+
+      try {
+        const res = await fetch(`/api/code/${EXP_ID}`);
+        if (!res.ok) throw new Error('Script not found');
+        const code = await res.text();
+        const scriptName = `${EXP_ID}_*.py`;
+        title.textContent = scriptName;
+        body.textContent = code;
+      } catch (e) {
+        body.textContent = `Error: ${e.message}`;
+      }
+    }
+
+    function closeCode() {
+      document.getElementById('code-modal').style.display = 'none';
+    }
+
+    function copyCode() {
+      const code = document.getElementById('code-modal-body').textContent;
+      navigator.clipboard.writeText(code).then(() => {
+        const btn = document.getElementById('btn-copy-code');
+        btn.textContent = '✅ Copied!';
+        setTimeout(() => btn.textContent = '📋 Copy', 1500);
+      });
+    }
+
+    // Close modal on Escape key
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeCode();
+    });
 
     function escapeHtml(text) {
       const div = document.createElement('div');

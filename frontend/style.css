@@ -266,6 +266,102 @@ a:hover { text-decoration: underline; }
   line-height: 1.6;
 }
 
+/* ═══ VIEW CODE BUTTON ═══ */
+
+.btn-code {
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 600;
+  background: transparent;
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  padding: 6px 14px;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-top: 12px;
+  transition: all .15s;
+}
+.btn-code:hover {
+  border-color: var(--gold);
+  color: var(--gold);
+  background: rgba(196,154,60,.08);
+}
+
+/* ═══ CODE MODAL ═══ */
+
+.code-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.65);
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.code-modal {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  width: 100%;
+  max-width: 780px;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 12px 40px rgba(0,0,0,.5);
+}
+
+.code-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--border);
+}
+
+.code-modal-title {
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--gold);
+}
+
+.code-modal-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-copy {
+  font-family: var(--mono);
+  font-size: 11px;
+  background: transparent;
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  padding: 5px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all .15s;
+}
+.btn-copy:hover {
+  border-color: var(--green);
+  color: var(--green);
+}
+
+.code-modal-body {
+  padding: 20px;
+  font-family: var(--mono);
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text);
+  white-space: pre;
+  overflow: auto;
+  margin: 0;
+  tab-size: 4;
+}
+
 /* ═══ VARIANT CARD ═══ */
 
 .variant-card {

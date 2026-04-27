@@ -14,7 +14,7 @@ EC2_URL = os.getenv("EC2_URL", "http://localhost:11434/v1")
 
 
 class EC2Provider(BaseLLMProvider):
-    name = "ec2"
+    name = "EC2 (Remote)"
 
     def __init__(self):
         self._client = OpenAI(base_url=EC2_URL, api_key="ollama")

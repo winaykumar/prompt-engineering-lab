@@ -14,7 +14,7 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
 
 
 class OpenAIProvider(BaseLLMProvider):
-    name = "openai"
+    name = "OpenAI (API)"
 
     def __init__(self):
         if not OPENAI_API_KEY:

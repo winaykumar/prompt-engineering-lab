@@ -28,7 +28,7 @@ GEMINI_BASE_URL = os.getenv(
 
 
 class GeminiProvider(BaseLLMProvider):
-    name = "gemini"
+    name = "Gemini (API)"
 
     def __init__(self):
         if not GEMINI_API_KEY:

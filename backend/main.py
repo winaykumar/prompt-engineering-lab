@@ -9,8 +9,9 @@ load_dotenv()
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, PlainTextResponse
 from pydantic import BaseModel
+from pathlib import Path
 
 from backend.llm_client import chat as llm_chat
 from backend.experiments.registry import get_experiment, list_experiments
@@ -76,6 +77,30 @@ def api_run_prompt(req: RunRequest):
 
 
 # ═══ Serve Frontend ═══
+
+# Script file mapping for the "View Code" feature
+_SCRIPT_MAP = {
+    "01": "01_zero_few_shot.py",
+    "02": "02_temperature.py",
+    "03": "03_chain_of_thought.py",
+    "04": "04_structured_output.py",
+    "05": "05_system_prompts.py",
+    "06": "06_self_critique.py",
+    "07": "07_prompt_injection.py",
+}
+
+
+@app.get("/api/code/{exp_id}")
+def api_get_code(exp_id: str):
+    """Return the CLI script source code for an experiment."""
+    filename = _SCRIPT_MAP.get(exp_id)
+    if not filename:
+        raise HTTPException(status_code=404, detail=f"No script for experiment {exp_id}")
+    script_path = Path(filename)
+    if not script_path.exists():
+        raise HTTPException(status_code=404, detail=f"Script file {filename} not found")
+    return PlainTextResponse(script_path.read_text(encoding="utf-8"))
+
 
 app.mount("/static", StaticFiles(directory="frontend"), name="static")
 
